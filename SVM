@@ -1,0 +1,51 @@
+import pandas as pd
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score, confusion_matrix
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+
+# Load the data from the CSV file
+df = pd.read_csv('./factor_excelfile.csv', index_col=False)
+
+# set the classified SPI values as the dependent variable
+y = df['Type']
+
+# set the remote sensing data as independent variables
+X = df[['Curvature', 'DEM', 'DrainD', 'Flow_acc', 'Flow_dir', 'Geology','Lineament_','LULC_21','NDVI_21','SBI_21','TWI','stream_net','soilG','watershed','stream_lin']]
+
+# split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Create the SVM classifier model
+svm = SVC(kernel='linear', random_state=42)
+
+# Fit the model on the training data
+svm.fit(X_train, y_train)
+
+# Predict the target variable for the test data
+y_pred = svm.predict(X_test)
+
+# calculate the accuracy of the classifier
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy: {accuracy}")
+
+# calculate the relative importance of each independent variable
+importances = np.abs(svm.coef_[0])
+for i, feature in enumerate(X.columns):
+    print(f"{feature}: {importances[i]}")
+
+# Calculate the ROC curve and AUC score
+fpr, tpr, thresholds = roc_curve(y_test, svm.decision_function(X_test))
+roc_auc = auc(fpr, tpr)
+
+# Plot the ROC curve
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (AUC = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+plt.show()
