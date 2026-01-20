@@ -1,0 +1,49 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import roc_curve, auc
+import matplotlib.pyplot as plt
+
+# Load the dataset 
+df = pd.read_csv('Dataset.csv')
+
+# Extract the features and target variable
+X = df[['aspects', 'LAI', 'LULC_21', 'temperatur', 'NDVI', 'NDWI','river','road','settlement','Slope','DEM','rainfall','Curvature','Roughness','FCR']]
+y = df['Type']
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42)
+
+# Create the GBDT classifier model
+gbdt = GradientBoostingClassifier(random_state=42)
+
+# Fit the model on the training data
+gbdt.fit(X_train, y_train)
+
+# Get the feature importance scores
+importance_scores = gbdt.feature_importances_
+
+# Print the feature importance scores
+print("Feature Importance Scores:")
+for feature, importance in zip(X.columns, importance_scores):
+    print(f"{feature}: {importance}")
+
+# Predict the target variable for the test data
+y_proba = gbdt.predict_proba(X_test)[:, 1]
+
+# Compute the false positive rate and true positive rate for different probability thresholds
+fpr, tpr, thresholds = roc_curve(y_test, y_proba)
+
+# Compute the area under the ROC curve
+roc_auc = auc(fpr, tpr)
+
+# Plot the ROC curve
+plt.plot(fpr, tpr, color='darkorange', lw=2, label='ROC curve (AUC = %0.2f)' % roc_auc)
+plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic')
+plt.legend(loc="lower right")
+plt.show()
